@@ -166,13 +166,6 @@
             border: 1px solid #0a2f6c;
             color: #0a2f6c;
         }
-        .progress-badge {
-            font-size: 0.7rem;
-            background: #e9ecef;
-            border-radius: 40px;
-            padding: 4px 10px;
-            display: inline-block;
-        }
         .summary-table-wrapper {
             overflow-x: auto;
             border-radius: 24px;
@@ -195,13 +188,91 @@
         }
         .school-row {
             cursor: pointer;
-            transition: background 0.1s;
+            transition: filter 0.1s;
         }
         .school-row:hover {
-            background: #f1f5f9;
+            filter: brightness(0.97);
         }
-        .status-icon {
-            font-size: 1.1rem;
+        /* Cores de status */
+        .status-verde { background-color: #d1fae5; }  /* verde claro */
+        .status-amarelo { background-color: #fef9c3; } /* amarelo claro */
+        .status-vermelho { background-color: #ffe4e2; } /* vermelho claro */
+        
+        .status-badge {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .progress-stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            background: #f1f5f9;
+            border-radius: 28px;
+            padding: 16px 20px;
+            align-items: center;
+        }
+        .stat-card {
+            flex: 1;
+            min-width: 100px;
+            text-align: center;
+            background: white;
+            border-radius: 24px;
+            padding: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .progress-bar-container {
+            flex: 2;
+            height: 28px;
+            background: #e2e8f0;
+            border-radius: 40px;
+            overflow: hidden;
+            display: flex;
+        }
+        .progress-segment {
+            height: 100%;
+            transition: width 0.3s;
+        }
+        .progress-verde { background-color: #10b981; }
+        .progress-amarelo { background-color: #f59e0b; }
+        .progress-vermelho { background-color: #ef4444; }
+        .filter-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            border-radius: 40px;
+            padding: 5px 15px;
+            border: 1px solid #cbd5e1;
+        }
+        .search-box i {
+            color: #64748b;
+        }
+        .search-box input {
+            border: none;
+            padding: 8px 0;
+            width: 220px;
+            outline: none;
         }
         .toast {
             position: fixed;
@@ -226,9 +297,7 @@
         @media (max-width: 700px) {
             .container { padding: 16px; }
             .card { padding: 1.2rem; }
-        }
-        .week-selector {
-            background: #f8fafc;
+            .stat-number { font-size: 1.3rem; }
         }
         .helper-text {
             font-size: 0.7rem;
@@ -290,6 +359,28 @@
     <div class="card">
         <h2><i class="fas fa-chart-simple"></i> Panorama da Semana Selecionada</h2>
         <div id="weeklySummaryInfo" style="margin-bottom: 12px; font-weight: 500;"></div>
+        
+        <!-- Barra de porcentagens e estatísticas -->
+        <div id="progressStatsPanel" class="progress-stats">
+            <div class="stat-card"><div class="stat-number" id="verdeCount">0</div><div class="stat-label">✅ Concluído</div></div>
+            <div class="stat-card"><div class="stat-number" id="amareloCount">0</div><div class="stat-label">⚡ Em andamento</div></div>
+            <div class="stat-card"><div class="stat-number" id="vermelhoCount">0</div><div class="stat-label">🔍 Pendente / Atraso</div></div>
+            <div class="progress-bar-container" id="progressBarContainer">
+                <div class="progress-segment progress-verde" style="width:0%"></div>
+                <div class="progress-segment progress-amarelo" style="width:0%"></div>
+                <div class="progress-segment progress-vermelho" style="width:0%"></div>
+            </div>
+        </div>
+        
+        <!-- Filtro de escolas -->
+        <div class="filter-area">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="filterSchoolInput" placeholder="Filtrar escola...">
+            </div>
+            <button id="clearFilterBtn" class="btn-primary btn-outline" style="background:white; padding:6px 16px;">Limpar filtro</button>
+        </div>
+        
         <div class="summary-table-wrapper">
             <table id="summaryTable">
                 <thead>
@@ -307,7 +398,7 @@
                 </tbody>
             </table>
         </div>
-        <div class="helper-text" style="margin-top: 12px;"><i class="fas fa-mouse-pointer"></i> Clique em qualquer linha da tabela para editar rapidamente a escola selecionada.</div>
+        <div class="helper-text" style="margin-top: 12px;"><i class="fas fa-mouse-pointer"></i> Clique em qualquer linha da tabela para editar rapidamente. Linhas coloridas indicam status geral da escola na semana.</div>
     </div>
     <footer>
         <i class="fas fa-database"></i> Firebase · Dados salvos em tempo real | Registro de percurso semanal (segunda a sexta) 2026
@@ -316,9 +407,8 @@
 <div id="toastMsg" class="toast"></div>
 
 <script>
-    // ======================= CONFIGURAÇÃO DO FIREBASE (SUBSTITUIR PELOS DADOS DO SEU PROJETO) =======================
-    // Instruções: Crie um projeto no Firebase, ative o Firestore e copie as credenciais abaixo.
-     const firebaseConfig = {
+    // ======================= CONFIGURAÇÃO DO FIREBASE (JÁ PREENCHIDA) =======================
+    const firebaseConfig = {
         apiKey: "AIzaSyBrkEa1jGwVKhZWg2CEBeG2ByQ29mS3UM8",
         authDomain: "ure-caieiras-checklist-tutoraf.firebaseapp.com",
         projectId: "ure-caieiras-checklist-tutoraf",
@@ -326,22 +416,20 @@
         messagingSenderId: "373879271731",
         appId: "1:373879271731:web:608d203c0da60ceb390e46"
     };
-    // ==============================================================================================================
+    // ========================================================================================
 
-    // Inicializar Firebase
     let db;
     try {
         firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
-        console.log("Firebase inicializado com sucesso (modo compat).");
+        console.log("Firebase inicializado");
     } catch (err) {
-        console.error("Erro ao inicializar Firebase:", err);
-        alert("ATENÇÃO: Configure corretamente as credenciais do Firebase no código. O app usará modo simulado local (apenas visual).");
-        // fallback para não quebrar totalmente: simula db (mas não salva)
+        console.error("Erro Firebase:", err);
+        alert("Erro ao conectar Firebase. Verifique suas credenciais.");
         db = { collection: () => ({ doc: () => ({ set: () => Promise.reject("Firebase não configurado"), get: () => Promise.resolve({ exists: false, data: () => ({}) }) }) }) };
     }
 
-    // ------------------------- LISTA DAS 67 ESCOLAS (URE CAIEIRAS) -------------------------
+    // LISTA DAS 67 ESCOLAS
     const escolasList = [
         "E.E. ADAIL JARBAS DUCLOS", "E.E. AFONSO MORENO", "E.E. ALADINO POLON", "E.E. ALBERTO GRAF – CAPITÃO",
         "E.E. ALBINO FIORE", "E.E. ALFRIED THEODOR WEISZFLOG", "E.E. ANA MARIA GARRIDO ORLANDIN – PROF.ª",
@@ -370,57 +458,41 @@
         "E.E. ZILTON BICUDO – PROF.", "E.E. OLINDO DÁRTORA – DR."
     ];
 
-    // ---------- GERAÇÃO DAS SEMANAS (segunda a sexta) a partir de 02 de março de 2026 ----------
+    // Geração das semanas
     function gerarSemanas2026() {
         const semanas = [];
-        const startDate = new Date(2026, 2, 2); // 2 de março de 2026 (segunda-feira)
+        const startDate = new Date(2026, 2, 2);
         let currentMonday = new Date(startDate);
         let weekIndex = 1;
-        const limiteFim = new Date(2026, 11, 31); // até dez/2026
-        
+        const limiteFim = new Date(2026, 11, 31);
         while (currentMonday <= limiteFim) {
             const monday = new Date(currentMonday);
             const friday = new Date(monday);
-            friday.setDate(monday.getDate() + 4); // sexta-feira
-            
-            // Se extrapolar 2026, quebra
+            friday.setDate(monday.getDate() + 4);
             if (friday.getFullYear() > 2026) break;
-            
-            const formatar = (date) => {
-                const day = String(date.getDate()).padStart(2,'0');
-                const month = String(date.getMonth()+1).padStart(2,'0');
-                return `${day}/${month}`;
-            };
+            const formatar = (date) => `${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}`;
             const label = `Semana ${weekIndex} · ${formatar(monday)} a ${formatar(friday)}/2026`;
-            const weekStartISO = monday.toISOString().split('T')[0]; // YYYY-MM-DD
-            semanas.push({
-                id: weekIndex,
-                startISO: weekStartISO,
-                label: label,
-                startDate: monday,
-                endDate: friday
-            });
+            const weekStartISO = monday.toISOString().split('T')[0];
+            semanas.push({ id: weekIndex, startISO: weekStartISO, label: label, startDate: monday, endDate: friday });
             weekIndex++;
             currentMonday.setDate(currentMonday.getDate() + 7);
-            if (weekIndex > 45) break; // segurança
+            if (weekIndex > 45) break;
         }
         return semanas;
     }
-    
-    const semanasList = gerarSemanas2026(); // ~43 semanas
-    
-    // Estrutura dos 3 itens do checklist (conforme PDF)
+    const semanasList = gerarSemanas2026();
     const CHECKLIST_ITENS = [
         { id: "registro_ok", label: "📌 Registro para a semana vigente ok" },
         { id: "registro_verificado", label: "🔎 Registro verificado, em atraso contatar tutor(a)" },
         { id: "registro_andamento", label: "⚡ Registro para a semana vigente em andamento" }
     ];
     
-    // Variáveis globais de estado
     let currentSchool = escolasList[0];
     let currentWeek = semanasList[0];
+    let allSchoolsDataMap = new Map(); // guarda dados brutos para filtro
+    let currentFilter = "";
     
-    // Elementos DOM
+    // DOM elements
     const schoolSelect = document.getElementById('schoolSelect');
     const weekSelect = document.getElementById('weekSelect');
     const checklistContainer = document.getElementById('checklistContainer');
@@ -429,8 +501,13 @@
     const clearBtn = document.getElementById('clearFormBtn');
     const summaryTableBody = document.getElementById('summaryTableBody');
     const weeklySummaryInfo = document.getElementById('weeklySummaryInfo');
+    const filterInput = document.getElementById('filterSchoolInput');
+    const clearFilterBtn = document.getElementById('clearFilterBtn');
+    const verdeCountSpan = document.getElementById('verdeCount');
+    const amareloCountSpan = document.getElementById('amareloCount');
+    const vermelhoCountSpan = document.getElementById('vermelhoCount');
+    const progressBarContainer = document.getElementById('progressBarContainer');
     
-    // Helper: mostrar toast
     function showToast(msg, isError = false) {
         const toast = document.getElementById('toastMsg');
         toast.textContent = msg;
@@ -439,7 +516,13 @@
         setTimeout(() => toast.style.opacity = '0', 3200);
     }
     
-    // Preencher select de escolas
+    // Determina o status geral da escola baseado nos checkboxes (prioridade: ok > andamento > verificado/nenhum)
+    function getSchoolStatus(checklist) {
+        if (checklist.registro_ok === true) return "verde";
+        if (checklist.registro_andamento === true) return "amarelo";
+        return "vermelho"; // padrão: pendente ou atraso
+    }
+    
     function fillSchools() {
         schoolSelect.innerHTML = '';
         escolasList.forEach(escola => {
@@ -449,13 +532,9 @@
             schoolSelect.appendChild(option);
         });
         schoolSelect.value = currentSchool;
-        schoolSelect.addEventListener('change', (e) => {
-            currentSchool = e.target.value;
-            loadDataForCurrentSelection();
-        });
+        schoolSelect.addEventListener('change', (e) => { currentSchool = e.target.value; loadDataForCurrentSelection(); });
     }
     
-    // Preencher select de semanas
     function fillWeeks() {
         weekSelect.innerHTML = '';
         semanasList.forEach(week => {
@@ -470,26 +549,21 @@
             const found = semanasList.find(w => w.startISO === selectedISO);
             if (found) currentWeek = found;
             loadDataForCurrentSelection();
-            renderWeeklySummary(); // atualiza panorama semanal
+            renderWeeklySummary();
         });
     }
     
-    // Renderizar checklists no formulário
     function renderChecklistForm(savedData = {}) {
         checklistContainer.innerHTML = '';
         CHECKLIST_ITENS.forEach(item => {
             const div = document.createElement('div');
             div.className = 'checklist-item';
             const isChecked = savedData[item.id] === true;
-            div.innerHTML = `
-                <input type="checkbox" id="chk_${item.id}" ${isChecked ? 'checked' : ''}>
-                <label for="chk_${item.id}">${item.label}</label>
-            `;
+            div.innerHTML = `<input type="checkbox" id="chk_${item.id}" ${isChecked ? 'checked' : ''}><label for="chk_${item.id}">${item.label}</label>`;
             checklistContainer.appendChild(div);
         });
     }
     
-    // Obter valores dos checkboxes atuais
     function getCurrentChecklistValues() {
         const values = {};
         CHECKLIST_ITENS.forEach(item => {
@@ -499,7 +573,6 @@
         return values;
     }
     
-    // Carregar dados do Firestore para escola + semana atual e preencher form
     async function loadDataForCurrentSelection() {
         if (!db || !db.collection) return;
         try {
@@ -508,27 +581,20 @@
             const docSnap = await docRef.get();
             if (docSnap.exists) {
                 const data = docSnap.data();
-                const checklistValues = data.checklist || {};
-                renderChecklistForm(checklistValues);
+                renderChecklistForm(data.checklist || {});
                 observationField.value = data.observacao || '';
             } else {
-                // Novo registro: checklist vazio
                 renderChecklistForm({});
                 observationField.value = '';
             }
         } catch (err) {
-            console.error("Erro ao carregar dados:", err);
-            showToast("Erro ao carregar registro: verifique conexão/Firebase", true);
+            showToast("Erro ao carregar registro", true);
             renderChecklistForm({});
         }
     }
     
-    // Salvar dados atuais no Firebase
     async function saveCurrentRecord() {
-        if (!db || !db.collection) {
-            showToast("Firebase não configurado. Configure as credenciais.", true);
-            return;
-        }
+        if (!db || !db.collection) { showToast("Firebase não configurado", true); return; }
         const checklistValues = getCurrentChecklistValues();
         const observacao = observationField.value.trim();
         const docId = `${currentSchool.replace(/[^a-z0-9]/gi, '_')}_${currentWeek.startISO}`;
@@ -543,142 +609,157 @@
         };
         try {
             await docRef.set(payload, { merge: true });
-            showToast(`✅ Registro salvo: ${currentSchool} - ${currentWeek.label}`);
-            // Atualizar tabela de resumo para a semana atual
+            showToast(`✅ Salvo: ${currentSchool} - ${currentWeek.label}`);
             await renderWeeklySummary();
         } catch (err) {
-            console.error(err);
-            showToast(`❌ Erro ao salvar: ${err.message}`, true);
+            showToast(`❌ Erro: ${err.message}`, true);
         }
     }
     
-    // Renderizar tabela panorâmica: todas as escolas para a semana selecionada (currentWeek)
     async function renderWeeklySummary() {
         if (!db || !db.collection) {
-            summaryTableBody.innerHTML = '<tr><td colspan="6">⚠️ Firebase não configurado - configure as credenciais no código</td></tr>';
+            summaryTableBody.innerHTML = '<tr><td colspan="6">⚠️ Firebase não configurado</td></tr>';
             return;
         }
         const targetWeekISO = currentWeek.startISO;
         weeklySummaryInfo.innerHTML = `<i class="fas fa-chalkboard-user"></i> Status das escolas para: <strong>${currentWeek.label}</strong>`;
-        summaryTableBody.innerHTML = '<tr><td colspan="6">Carregando dados das escolas...</td></tr>';
-        
         try {
-            // Buscar todos os documentos cujo weekStart == targetWeekISO
-            const snapshot = await db.collection('percurso_semanal')
-                .where('weekStart', '==', targetWeekISO)
-                .get();
-            
+            const snapshot = await db.collection('percurso_semanal').where('weekStart', '==', targetWeekISO).get();
             const recordsMap = new Map();
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                recordsMap.set(data.escola, data);
-            });
-            
-            // Montar linhas para todas as escolas (garantir que apareçam mesmo sem registro)
-            let tbodyHtml = '';
+            snapshot.forEach(doc => { const data = doc.data(); recordsMap.set(data.escola, data); });
+            allSchoolsDataMap.clear();
+            // Monta dados de todas escolas
+            const escolasStatus = [];
             for (const escola of escolasList) {
                 const record = recordsMap.get(escola);
                 const checklist = record?.checklist || {};
                 const obs = record?.observacao || '';
-                const obsPreview = obs.length > 35 ? obs.substring(0,35)+'…' : obs;
-                const registroOk = checklist.registro_ok ? '✅' : '⬜';
-                const verificado = checklist.registro_verificado ? '🔍' : '◻️';
-                const andamento = checklist.registro_andamento ? '⚡' : '◽';
-                tbodyHtml += `
-                    <tr class="school-row" data-escola="${escola.replace(/"/g, '&quot;')}">
-                        <td><strong>${escola}</strong></td>
-                        <td style="text-align:center">${registroOk}</td>
-                        <td style="text-align:center">${verificado}</td>
-                        <td style="text-align:center">${andamento}</td>
-                        <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;">${obsPreview || '—'}</td>
-                        <td><button class="edit-school-btn" data-escola="${escola.replace(/"/g, '&quot;')}" style="background:#0a2f6c; border:none; border-radius:30px; padding:4px 12px; color:white; cursor:pointer;"><i class="fas fa-edit"></i> Editar</button></td>
-                    </tr>
-                `;
+                const status = getSchoolStatus(checklist);
+                escolasStatus.push({ escola, checklist, obs, status, record });
+                allSchoolsDataMap.set(escola, { checklist, obs, status });
             }
-            summaryTableBody.innerHTML = tbodyHtml;
-            
-            // Adicionar eventos de clique nas linhas e botões
-            document.querySelectorAll('.school-row').forEach(row => {
-                const escolaAttr = row.getAttribute('data-escola');
-                if (escolaAttr) {
-                    row.addEventListener('click', (e) => {
-                        // Evitar conflito se clicou no botão
-                        if (e.target.closest('.edit-school-btn')) return;
-                        currentSchool = escolaAttr;
-                        schoolSelect.value = currentSchool;
-                        loadDataForCurrentSelection();
-                        showToast(`Editando: ${currentSchool}`, false);
-                    });
-                }
-            });
-            document.querySelectorAll('.edit-school-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const escola = btn.getAttribute('data-escola');
-                    if (escola) {
-                        currentSchool = escola;
-                        schoolSelect.value = currentSchool;
-                        loadDataForCurrentSelection();
-                        showToast(`Editando: ${currentSchool}`, false);
-                    }
-                });
-            });
+            // Atualizar estatísticas e barra
+            let verde = 0, amarelo = 0, vermelho = 0;
+            for (const item of escolasStatus) {
+                if (item.status === 'verde') verde++;
+                else if (item.status === 'amarelo') amarelo++;
+                else vermelho++;
+            }
+            const total = escolasList.length;
+            verdeCountSpan.innerText = verde;
+            amareloCountSpan.innerText = amarelo;
+            vermelhoCountSpan.innerText = vermelho;
+            const pctVerde = (verde/total)*100;
+            const pctAmarelo = (amarelo/total)*100;
+            const pctVermelho = (vermelho/total)*100;
+            // Atualizar barra
+            const progressSegments = document.querySelectorAll('.progress-segment');
+            if (progressSegments.length) {
+                progressSegments[0].style.width = `${pctVerde}%`;
+                progressSegments[1].style.width = `${pctAmarelo}%`;
+                progressSegments[2].style.width = `${pctVermelho}%`;
+            }
+            // Aplicar filtro e renderizar linhas
+            applyFilterAndRender(escolasStatus);
         } catch (err) {
-            console.error("Erro no resumo semanal:", err);
+            console.error(err);
             summaryTableBody.innerHTML = `<tr><td colspan="6">Erro ao carregar dados: ${err.message}</td></tr>`;
         }
     }
     
-    // Limpar formulário (apenas campos locais)
+    function applyFilterAndRender(escolasStatusArray) {
+        const filterLower = currentFilter.toLowerCase();
+        const filtered = filterLower ? escolasStatusArray.filter(item => item.escola.toLowerCase().includes(filterLower)) : [...escolasStatusArray];
+        let tbodyHtml = '';
+        for (const item of filtered) {
+            const { escola, checklist, obs, status } = item;
+            const obsPreview = obs.length > 35 ? obs.substring(0,35)+'…' : obs;
+            const registroOk = checklist.registro_ok ? '✅' : '⬜';
+            const verificado = checklist.registro_verificado ? '🔍' : '◻️';
+            const andamento = checklist.registro_andamento ? '⚡' : '◽';
+            let statusClass = '';
+            if (status === 'verde') statusClass = 'status-verde';
+            else if (status === 'amarelo') statusClass = 'status-amarelo';
+            else statusClass = 'status-vermelho';
+            tbodyHtml += `
+                <tr class="school-row ${statusClass}" data-escola="${escola.replace(/"/g, '&quot;')}">
+                    <td><strong>${escola}</strong></td>
+                    <td style="text-align:center">${registroOk}</td>
+                    <td style="text-align:center">${verificado}</td>
+                    <td style="text-align:center">${andamento}</td>
+                    <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;">${obsPreview || '—'}</td>
+                    <td><button class="edit-school-btn" data-escola="${escola.replace(/"/g, '&quot;')}" style="background:#0a2f6c; border:none; border-radius:30px; padding:4px 12px; color:white; cursor:pointer;"><i class="fas fa-edit"></i> Editar</button></td>
+                </tr>
+            `;
+        }
+        if (filtered.length === 0) tbodyHtml = '<tr><td colspan="6">Nenhuma escola encontrada com esse filtro.</td></tr>';
+        summaryTableBody.innerHTML = tbodyHtml;
+        // Eventos
+        document.querySelectorAll('.school-row').forEach(row => {
+            const escolaAttr = row.getAttribute('data-escola');
+            if (escolaAttr) {
+                row.addEventListener('click', (e) => {
+                    if (e.target.closest('.edit-school-btn')) return;
+                    currentSchool = escolaAttr;
+                    schoolSelect.value = currentSchool;
+                    loadDataForCurrentSelection();
+                    showToast(`Editando: ${currentSchool}`, false);
+                });
+            }
+        });
+        document.querySelectorAll('.edit-school-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const escola = btn.getAttribute('data-escola');
+                if (escola) {
+                    currentSchool = escola;
+                    schoolSelect.value = currentSchool;
+                    loadDataForCurrentSelection();
+                    showToast(`Editando: ${currentSchool}`, false);
+                }
+            });
+        });
+    }
+    
     function clearFormLocal() {
         renderChecklistForm({});
         observationField.value = '';
-        showToast("Campos limpos localmente (não salvos)", false);
+        showToast("Campos limpos localmente", false);
     }
     
-    // Listener para salvar
-    saveBtn.addEventListener('click', async () => {
-        await saveCurrentRecord();
+    // Filtro em tempo real
+    filterInput.addEventListener('input', (e) => {
+        currentFilter = e.target.value;
+        // re-render com dados atuais (allSchoolsDataMap precisa ser reconstruído)
+        const escolasArray = escolasList.map(escola => {
+            const data = allSchoolsDataMap.get(escola) || { checklist: {}, obs: '', status: 'vermelho' };
+            return { escola, checklist: data.checklist, obs: data.obs, status: data.status };
+        });
+        applyFilterAndRender(escolasArray);
     });
+    clearFilterBtn.addEventListener('click', () => {
+        filterInput.value = '';
+        currentFilter = '';
+        const escolasArray = escolasList.map(escola => {
+            const data = allSchoolsDataMap.get(escola) || { checklist: {}, obs: '', status: 'vermelho' };
+            return { escola, checklist: data.checklist, obs: data.obs, status: data.status };
+        });
+        applyFilterAndRender(escolasArray);
+        showToast("Filtro removido", false);
+    });
+    
+    saveBtn.addEventListener('click', async () => { await saveCurrentRecord(); });
     clearBtn.addEventListener('click', clearFormLocal);
+    schoolSelect.addEventListener('change', async () => { await loadDataForCurrentSelection(); await renderWeeklySummary(); });
+    weekSelect.addEventListener('change', async () => { await loadDataForCurrentSelection(); await renderWeeklySummary(); });
     
-    // Quando mudar a semana pelo select, além do form atualizar, recarregar tabela e dados
-    async function onWeekOrSchoolChange() {
-        await loadDataForCurrentSelection();
-        await renderWeeklySummary();
-    }
-    
-    // Ajuste de eventos: quando escola ou semana mudar, recarrega
-    schoolSelect.addEventListener('change', async (e) => {
-        currentSchool = e.target.value;
-        await loadDataForCurrentSelection();
-        await renderWeeklySummary(); // mantém a semana já selecionada
-    });
-    
-    weekSelect.addEventListener('change', async (e) => {
-        const selectedISO = e.target.value;
-        const found = semanasList.find(w => w.startISO === selectedISO);
-        if (found) currentWeek = found;
-        await loadDataForCurrentSelection();
-        await renderWeeklySummary();
-    });
-    
-    // Inicialização
     async function init() {
         fillSchools();
         fillWeeks();
         await loadDataForCurrentSelection();
         await renderWeeklySummary();
     }
-    
-    init().catch(err => console.warn(err));
-    
-    // Se firebase falhar na leitura, ainda assim exibe tabela sem dados
-    window.addEventListener('load', () => {
-        if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "AIzaSyBExemplo1234567890Substitua") {
-            showToast("⚠️ Configure o Firebase com suas credenciais no código (firebaseConfig)", true);
-        }
-    });
+    init().catch(console.warn);
 </script>
 </body>
 </html>
