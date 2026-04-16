@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>URE Caieiras · Registro de Percurso Semanal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.4.0/css/all.css">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(145deg, #0a2f6c 0%, #041a3a 100%);
+            min-height: 100vh;
+            padding: 24px 20px;
+            color: #1e2a3e;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #f4f7fc;
+            border-radius: 48px;
+            padding: 24px;
+            box-shadow: 0 25px 40px rgba(0,0,0,0.35);
+            border: 1px solid #d32f2f;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #0a2f6ccc;
+            backdrop-filter: blur(6px);
+            padding: 10px 28px;
+            border-radius: 60px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .logo-area img {
+            max-height: 52px;
+            background: white;
+            border-radius: 14px;
+            padding: 4px;
+        }
+        .logo-area span {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #ffec9e;
+        }
+        .badge-year {
+            background: #d32f2fcc;
+            padding: 5px 14px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+        .card {
+            background: white;
+            border-radius: 32px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            transition: 0.2s;
+        }
+        .card h2 {
+            color: #0a2f6c;
+            border-left: 5px solid #d32f2f;
+            padding-left: 1rem;
+            margin-bottom: 1.4rem;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 220px;
+        }
+        label {
+            font-weight: 600;
+            color: #0a2f6c;
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+        select, textarea, input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 28px;
+            border: 1px solid #cbd5e1;
+            font-family: 'Inter', sans-serif;
+            background: #fff;
+            transition: 0.2s;
+        }
+        select:focus, textarea:focus {
+            outline: none;
+            border-color: #d32f2f;
+            box-shadow: 0 0 0 3px rgba(211,47,47,0.2);
+        }
+        .checklist-group {
+            background: #fef9e6;
+            border-radius: 28px;
+            padding: 1.2rem 1.5rem;
+            margin: 20px 0;
+        }
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 0;
+            border-bottom: 1px solid #ffe0b5;
+        }
+        .checklist-item:last-child {
+            border-bottom: none;
+        }
+        .checklist-item input {
+            width: 22px;
+            height: 22px;
+            accent-color: #d32f2f;
+            margin: 0;
+        }
+        .checklist-item label {
+            margin: 0;
+            font-weight: 500;
+            color: #2c3e4e;
+            font-size: 0.95rem;
+        }
+        .observation-area {
+            margin: 20px 0 20px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #0a2f6c, #0b3b7a);
+            border: none;
+            padding: 12px 28px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+            font-size: 0.9rem;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1e3f72, #0f2f5e);
+            transform: scale(0.98);
+        }
+        .btn-outline {
+            background: white;
+            border: 1px solid #0a2f6c;
+            color: #0a2f6c;
+        }
+        .progress-badge {
+            font-size: 0.7rem;
+            background: #e9ecef;
+            border-radius: 40px;
+            padding: 4px 10px;
+            display: inline-block;
+        }
+        .summary-table-wrapper {
+            overflow-x: auto;
+            border-radius: 24px;
+            margin-top: 15px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        th {
+            background: #eef2ff;
+            color: #0a2f6c;
+            font-weight: 700;
+        }
+        .school-row {
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .school-row:hover {
+            background: #f1f5f9;
+        }
+        .status-icon {
+            font-size: 1.1rem;
+        }
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            background: #2c7a4d;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: 500;
+            z-index: 1500;
+            opacity: 0;
+            transition: opacity 0.25s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            color: #b9cae0;
+        }
+        @media (max-width: 700px) {
+            .container { padding: 16px; }
+            .card { padding: 1.2rem; }
+        }
+        .week-selector {
+            background: #f8fafc;
+        }
+        .helper-text {
+            font-size: 0.7rem;
+            color: #475569;
+            margin-top: 4px;
+        }
+        .flex-btns {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="logo-area">
+            <img src="https://i.ibb.co/0p01LzxB/logo3de.jpg" alt="Logo SEDUC">
+            <span>URE Caieiras · Registro de Percurso Semanal</span>
+        </div>
+        <div class="badge-year">
+            <i class="fas fa-calendar-alt"></i> 2026 · Acompanhamento Semanal
+        </div>
+    </div>
+
+    <!-- CARD PRINCIPAL: registro da semana -->
+    <div class="card">
+        <h2><i class="fas fa-clipboard-list"></i> Registro de Percurso - Semana</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label><i class="fas fa-school"></i> Escola</label>
+                <select id="schoolSelect"></select>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-calendar-week"></i> Semana (segunda a sexta)</label>
+                <select id="weekSelect"></select>
+                <div class="helper-text">Baseado no calendário letivo 2026 · a partir de 02/03</div>
+            </div>
+        </div>
+
+        <div class="checklist-group">
+            <div style="font-weight: 700; margin-bottom: 12px;"><i class="fas fa-check-circle"></i> Itens do registro de percurso</div>
+            <div id="checklistContainer"></div>
+        </div>
+
+        <div class="observation-area">
+            <label><i class="fas fa-comment-dots"></i> Observações (registro livre)</label>
+            <textarea id="observationField" rows="3" placeholder="Registrar informações adicionais, pendências, ações realizadas..."></textarea>
+        </div>
+
+        <div class="flex-btns">
+            <button id="saveRecordBtn" class="btn-primary"><i class="fas fa-save"></i> Salvar registro</button>
+            <button id="clearFormBtn" class="btn-primary btn-outline" style="background: white; color:#0a2f6c;"><i class="fas fa-undo-alt"></i> Limpar campos</button>
+        </div>
+    </div>
+
+    <!-- CARD DE ACOMPANHAMENTO: visão semanal de todas as escolas -->
+    <div class="card">
+        <h2><i class="fas fa-chart-simple"></i> Panorama da Semana Selecionada</h2>
+        <div id="weeklySummaryInfo" style="margin-bottom: 12px; font-weight: 500;"></div>
+        <div class="summary-table-wrapper">
+            <table id="summaryTable">
+                <thead>
+                    <tr>
+                        <th>Escola</th>
+                        <th>✅ Registro ok</th>
+                        <th>🔍 Verificado / contatar tutor</th>
+                        <th>⚙️ Em andamento</th>
+                        <th>📝 Obs.</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="summaryTableBody">
+                    <tr><td colspan="6">Carregando dados...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="helper-text" style="margin-top: 12px;"><i class="fas fa-mouse-pointer"></i> Clique em qualquer linha da tabela para editar rapidamente a escola selecionada.</div>
+    </div>
+    <footer>
+        <i class="fas fa-database"></i> Firebase · Dados salvos em tempo real | Registro de percurso semanal (segunda a sexta) 2026
+    </footer>
+</div>
+<div id="toastMsg" class="toast"></div>
+
+<script>
+    // ======================= CONFIGURAÇÃO DO FIREBASE (SUBSTITUIR PELOS DADOS DO SEU PROJETO) =======================
+    // Instruções: Crie um projeto no Firebase, ative o Firestore e copie as credenciais abaixo.
+     const firebaseConfig = {
+        apiKey: "AIzaSyBrkEa1jGwVKhZWg2CEBeG2ByQ29mS3UM8",
+        authDomain: "ure-caieiras-checklist-tutoraf.firebaseapp.com",
+        projectId: "ure-caieiras-checklist-tutoraf",
+        storageBucket: "ure-caieiras-checklist-tutoraf.firebasestorage.app",
+        messagingSenderId: "373879271731",
+        appId: "1:373879271731:web:608d203c0da60ceb390e46"
+    };
+    // ==============================================================================================================
+
+    // Inicializar Firebase
+    let db;
+    try {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        console.log("Firebase inicializado com sucesso (modo compat).");
+    } catch (err) {
+        console.error("Erro ao inicializar Firebase:", err);
+        alert("ATENÇÃO: Configure corretamente as credenciais do Firebase no código. O app usará modo simulado local (apenas visual).");
+        // fallback para não quebrar totalmente: simula db (mas não salva)
+        db = { collection: () => ({ doc: () => ({ set: () => Promise.reject("Firebase não configurado"), get: () => Promise.resolve({ exists: false, data: () => ({}) }) }) }) };
+    }
+
+    // ------------------------- LISTA DAS 67 ESCOLAS (URE CAIEIRAS) -------------------------
+    const escolasList = [
+        "E.E. ADAIL JARBAS DUCLOS", "E.E. AFONSO MORENO", "E.E. ALADINO POLON", "E.E. ALBERTO GRAF – CAPITÃO",
+        "E.E. ALBINO FIORE", "E.E. ALFRIED THEODOR WEISZFLOG", "E.E. ANA MARIA GARRIDO ORLANDIN – PROF.ª",
+        "E.E. APARECIDO ROBERTO TONELLOTTI – PROF.", "E.E. ARMANDO SESTINI", "E.E. ARTHUR WEINGRILL",
+        "E.E. AZEVEDO SOARES", "E.E. BAIRRO DO ITAIM", "E.E. BAIRRO JUNDIAIZINHO", "E.E. BELÉM DA SERRA",
+        "E.E. BENEDITO APARECIDO TAVARES – PROF.", "E.E. BENEDITO FAGUNDES MARQUES",
+        "E.E. BUENO DE AZEVEDO FILHO – PROF.", "E.E. CARLOS AUGUSTO DE PÁDUA FLEURY – PROF.",
+        "E.E. CELESTINA VALENTE LENGENFELDER – PROF.ª", "E.E. CHÁCARA CAMPONESA/ Jd Vassouras",
+        "E.E. DOMINGOS CAMBIAGHI – PROF.", "E.E. ÉLCIO JOSÉ PEREIRA COTRIM – PROF.",
+        "E.E. ELVIRA PARADA MANGA – PROF.ª", "E.E. FRANCISCO GONÇALVES VIEIRA – PROFº",
+        "E.E. HERMELINA DE ALBUQUERQUE PASSARELLA – PROF.ª", "E.E. IRACI SARTORI VIEIRA DA SILVA – PROF.ª",
+        "E.E. ISAÍAS LUIZ MATIAZZO", "E.E. ISAURA DE MIRANDA BOTTO – PROFª", "E.E. ISAURA VALENTINI HANSER – PROFª",
+        "E.E. IVONE DOS ANJOS DA SILVA CAMPOS – PROF.ª", "E.E. JARDIM ALEGRIA II", "E.E. JARDIM DAS ROSAS",
+        "E.E. JARDIM SÃO FRANCISCO", "E.E. JARDIM SILVIA II", "E.E. JOAQUIM MARQUES DA SILVA SOBRINHO – TTE.",
+        "E.E. JOCIMARA VIEIRA DA SILVA – PROF.ª", "E.E. JOSÉ CARLOS DA SILVA JUNIOR",
+        "E.E. JOSÉ DE BARROS MARTINS – EDITOR", "E.E. JOSÉ PARADA – PROF.", "E.E. JOSÉ ROBERTO MELCHIOR – DR.",
+        "E.E. KÁTIA MARIA TARIFA LEME TONELLI – PROF.ª", "E.E. LENITA CORRÊA CAMARGO – PROF.ª",
+        "E.E. LUIZ ALEXANDRE DOS SANTOS – VEREADOR", "E.E. LYDIA SCALET WALKER – PROF.ª",
+        "E.E. MARIA ZEZA GOMES DE OLIVEIRA", "E.E. MARIO TOLEDO DE MORAES – DR.", "E.E. NAIR HANNICKEL ROMARO",
+        "E.E. NELSON MANZANARES – DR.", "E.E. NIDE ZAIM CARDOSO – PROF.ª", "E.E. ODARICO OLIVEIRA NASCIMENTO – PROF.",
+        "E.E. OTTO WEISZFLOG", "E.E. OZILDE ALBUQUERQUE PASSARELLA – DR.", "E.E. PARQUE CENTO E VINTE II",
+        "E.E. PAULO DUARTE", "E.E. PEDRO GALRÃO DO NASCIMENTO", "E.E. PEDRO LELIS DE SOUZA – PREFEITO",
+        "E.E. PEDRO PAULO AGUIAR", "E.E. PIETRO PETRI", "E.E. RITUCO MITANI – PROF.ª",
+        "E.E. ROGÉRIO LEVORIN – PROF.", "E.E. SUZANA DIAS", "E.E. ULYSSES SANCHES RAMIRES – PROF.",
+        "E.E. VINCENZO LOBASSI", "E.E. WALTER RIBAS DE ANDRADE – PROF.", "E.E. WALTHER WEISZFLOG",
+        "E.E. ZILTON BICUDO – PROF.", "E.E. OLINDO DÁRTORA – DR."
+    ];
+
+    // ---------- GERAÇÃO DAS SEMANAS (segunda a sexta) a partir de 02 de março de 2026 ----------
+    function gerarSemanas2026() {
+        const semanas = [];
+        const startDate = new Date(2026, 2, 2); // 2 de março de 2026 (segunda-feira)
+        let currentMonday = new Date(startDate);
+        let weekIndex = 1;
+        const limiteFim = new Date(2026, 11, 31); // até dez/2026
+        
+        while (currentMonday <= limiteFim) {
+            const monday = new Date(currentMonday);
+            const friday = new Date(monday);
+            friday.setDate(monday.getDate() + 4); // sexta-feira
+            
+            // Se extrapolar 2026, quebra
+            if (friday.getFullYear() > 2026) break;
+            
+            const formatar = (date) => {
+                const day = String(date.getDate()).padStart(2,'0');
+                const month = String(date.getMonth()+1).padStart(2,'0');
+                return `${day}/${month}`;
+            };
+            const label = `Semana ${weekIndex} · ${formatar(monday)} a ${formatar(friday)}/2026`;
+            const weekStartISO = monday.toISOString().split('T')[0]; // YYYY-MM-DD
+            semanas.push({
+                id: weekIndex,
+                startISO: weekStartISO,
+                label: label,
+                startDate: monday,
+                endDate: friday
+            });
+            weekIndex++;
+            currentMonday.setDate(currentMonday.getDate() + 7);
+            if (weekIndex > 45) break; // segurança
+        }
+        return semanas;
+    }
+    
+    const semanasList = gerarSemanas2026(); // ~43 semanas
+    
+    // Estrutura dos 3 itens do checklist (conforme PDF)
+    const CHECKLIST_ITENS = [
+        { id: "registro_ok", label: "📌 Registro para a semana vigente ok" },
+        { id: "registro_verificado", label: "🔎 Registro verificado, em atraso contatar tutor(a)" },
+        { id: "registro_andamento", label: "⚡ Registro para a semana vigente em andamento" }
+    ];
+    
+    // Variáveis globais de estado
+    let currentSchool = escolasList[0];
+    let currentWeek = semanasList[0];
+    
+    // Elementos DOM
+    const schoolSelect = document.getElementById('schoolSelect');
+    const weekSelect = document.getElementById('weekSelect');
+    const checklistContainer = document.getElementById('checklistContainer');
+    const observationField = document.getElementById('observationField');
+    const saveBtn = document.getElementById('saveRecordBtn');
+    const clearBtn = document.getElementById('clearFormBtn');
+    const summaryTableBody = document.getElementById('summaryTableBody');
+    const weeklySummaryInfo = document.getElementById('weeklySummaryInfo');
+    
+    // Helper: mostrar toast
+    function showToast(msg, isError = false) {
+        const toast = document.getElementById('toastMsg');
+        toast.textContent = msg;
+        toast.style.backgroundColor = isError ? '#c0392b' : '#2c7a4d';
+        toast.style.opacity = '1';
+        setTimeout(() => toast.style.opacity = '0', 3200);
+    }
+    
+    // Preencher select de escolas
+    function fillSchools() {
+        schoolSelect.innerHTML = '';
+        escolasList.forEach(escola => {
+            const option = document.createElement('option');
+            option.value = escola;
+            option.textContent = escola;
+            schoolSelect.appendChild(option);
+        });
+        schoolSelect.value = currentSchool;
+        schoolSelect.addEventListener('change', (e) => {
+            currentSchool = e.target.value;
+            loadDataForCurrentSelection();
+        });
+    }
+    
+    // Preencher select de semanas
+    function fillWeeks() {
+        weekSelect.innerHTML = '';
+        semanasList.forEach(week => {
+            const option = document.createElement('option');
+            option.value = week.startISO;
+            option.textContent = week.label;
+            weekSelect.appendChild(option);
+        });
+        weekSelect.value = currentWeek.startISO;
+        weekSelect.addEventListener('change', (e) => {
+            const selectedISO = e.target.value;
+            const found = semanasList.find(w => w.startISO === selectedISO);
+            if (found) currentWeek = found;
+            loadDataForCurrentSelection();
+            renderWeeklySummary(); // atualiza panorama semanal
+        });
+    }
+    
+    // Renderizar checklists no formulário
+    function renderChecklistForm(savedData = {}) {
+        checklistContainer.innerHTML = '';
+        CHECKLIST_ITENS.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'checklist-item';
+            const isChecked = savedData[item.id] === true;
+            div.innerHTML = `
+                <input type="checkbox" id="chk_${item.id}" ${isChecked ? 'checked' : ''}>
+                <label for="chk_${item.id}">${item.label}</label>
+            `;
+            checklistContainer.appendChild(div);
+        });
+    }
+    
+    // Obter valores dos checkboxes atuais
+    function getCurrentChecklistValues() {
+        const values = {};
+        CHECKLIST_ITENS.forEach(item => {
+            const cb = document.getElementById(`chk_${item.id}`);
+            values[item.id] = cb ? cb.checked : false;
+        });
+        return values;
+    }
+    
+    // Carregar dados do Firestore para escola + semana atual e preencher form
+    async function loadDataForCurrentSelection() {
+        if (!db || !db.collection) return;
+        try {
+            const docId = `${currentSchool.replace(/[^a-z0-9]/gi, '_')}_${currentWeek.startISO}`;
+            const docRef = db.collection('percurso_semanal').doc(docId);
+            const docSnap = await docRef.get();
+            if (docSnap.exists) {
+                const data = docSnap.data();
+                const checklistValues = data.checklist || {};
+                renderChecklistForm(checklistValues);
+                observationField.value = data.observacao || '';
+            } else {
+                // Novo registro: checklist vazio
+                renderChecklistForm({});
+                observationField.value = '';
+            }
+        } catch (err) {
+            console.error("Erro ao carregar dados:", err);
+            showToast("Erro ao carregar registro: verifique conexão/Firebase", true);
+            renderChecklistForm({});
+        }
+    }
+    
+    // Salvar dados atuais no Firebase
+    async function saveCurrentRecord() {
+        if (!db || !db.collection) {
+            showToast("Firebase não configurado. Configure as credenciais.", true);
+            return;
+        }
+        const checklistValues = getCurrentChecklistValues();
+        const observacao = observationField.value.trim();
+        const docId = `${currentSchool.replace(/[^a-z0-9]/gi, '_')}_${currentWeek.startISO}`;
+        const docRef = db.collection('percurso_semanal').doc(docId);
+        const payload = {
+            escola: currentSchool,
+            weekStart: currentWeek.startISO,
+            weekLabel: currentWeek.label,
+            checklist: checklistValues,
+            observacao: observacao,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        };
+        try {
+            await docRef.set(payload, { merge: true });
+            showToast(`✅ Registro salvo: ${currentSchool} - ${currentWeek.label}`);
+            // Atualizar tabela de resumo para a semana atual
+            await renderWeeklySummary();
+        } catch (err) {
+            console.error(err);
+            showToast(`❌ Erro ao salvar: ${err.message}`, true);
+        }
+    }
+    
+    // Renderizar tabela panorâmica: todas as escolas para a semana selecionada (currentWeek)
+    async function renderWeeklySummary() {
+        if (!db || !db.collection) {
+            summaryTableBody.innerHTML = '<tr><td colspan="6">⚠️ Firebase não configurado - configure as credenciais no código</td></tr>';
+            return;
+        }
+        const targetWeekISO = currentWeek.startISO;
+        weeklySummaryInfo.innerHTML = `<i class="fas fa-chalkboard-user"></i> Status das escolas para: <strong>${currentWeek.label}</strong>`;
+        summaryTableBody.innerHTML = '<tr><td colspan="6">Carregando dados das escolas...</td></tr>';
+        
+        try {
+            // Buscar todos os documentos cujo weekStart == targetWeekISO
+            const snapshot = await db.collection('percurso_semanal')
+                .where('weekStart', '==', targetWeekISO)
+                .get();
+            
+            const recordsMap = new Map();
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                recordsMap.set(data.escola, data);
+            });
+            
+            // Montar linhas para todas as escolas (garantir que apareçam mesmo sem registro)
+            let tbodyHtml = '';
+            for (const escola of escolasList) {
+                const record = recordsMap.get(escola);
+                const checklist = record?.checklist || {};
+                const obs = record?.observacao || '';
+                const obsPreview = obs.length > 35 ? obs.substring(0,35)+'…' : obs;
+                const registroOk = checklist.registro_ok ? '✅' : '⬜';
+                const verificado = checklist.registro_verificado ? '🔍' : '◻️';
+                const andamento = checklist.registro_andamento ? '⚡' : '◽';
+                tbodyHtml += `
+                    <tr class="school-row" data-escola="${escola.replace(/"/g, '&quot;')}">
+                        <td><strong>${escola}</strong></td>
+                        <td style="text-align:center">${registroOk}</td>
+                        <td style="text-align:center">${verificado}</td>
+                        <td style="text-align:center">${andamento}</td>
+                        <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;">${obsPreview || '—'}</td>
+                        <td><button class="edit-school-btn" data-escola="${escola.replace(/"/g, '&quot;')}" style="background:#0a2f6c; border:none; border-radius:30px; padding:4px 12px; color:white; cursor:pointer;"><i class="fas fa-edit"></i> Editar</button></td>
+                    </tr>
+                `;
+            }
+            summaryTableBody.innerHTML = tbodyHtml;
+            
+            // Adicionar eventos de clique nas linhas e botões
+            document.querySelectorAll('.school-row').forEach(row => {
+                const escolaAttr = row.getAttribute('data-escola');
+                if (escolaAttr) {
+                    row.addEventListener('click', (e) => {
+                        // Evitar conflito se clicou no botão
+                        if (e.target.closest('.edit-school-btn')) return;
+                        currentSchool = escolaAttr;
+                        schoolSelect.value = currentSchool;
+                        loadDataForCurrentSelection();
+                        showToast(`Editando: ${currentSchool}`, false);
+                    });
+                }
+            });
+            document.querySelectorAll('.edit-school-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const escola = btn.getAttribute('data-escola');
+                    if (escola) {
+                        currentSchool = escola;
+                        schoolSelect.value = currentSchool;
+                        loadDataForCurrentSelection();
+                        showToast(`Editando: ${currentSchool}`, false);
+                    }
+                });
+            });
+        } catch (err) {
+            console.error("Erro no resumo semanal:", err);
+            summaryTableBody.innerHTML = `<tr><td colspan="6">Erro ao carregar dados: ${err.message}</td></tr>`;
+        }
+    }
+    
+    // Limpar formulário (apenas campos locais)
+    function clearFormLocal() {
+        renderChecklistForm({});
+        observationField.value = '';
+        showToast("Campos limpos localmente (não salvos)", false);
+    }
+    
+    // Listener para salvar
+    saveBtn.addEventListener('click', async () => {
+        await saveCurrentRecord();
+    });
+    clearBtn.addEventListener('click', clearFormLocal);
+    
+    // Quando mudar a semana pelo select, além do form atualizar, recarregar tabela e dados
+    async function onWeekOrSchoolChange() {
+        await loadDataForCurrentSelection();
+        await renderWeeklySummary();
+    }
+    
+    // Ajuste de eventos: quando escola ou semana mudar, recarrega
+    schoolSelect.addEventListener('change', async (e) => {
+        currentSchool = e.target.value;
+        await loadDataForCurrentSelection();
+        await renderWeeklySummary(); // mantém a semana já selecionada
+    });
+    
+    weekSelect.addEventListener('change', async (e) => {
+        const selectedISO = e.target.value;
+        const found = semanasList.find(w => w.startISO === selectedISO);
+        if (found) currentWeek = found;
+        await loadDataForCurrentSelection();
+        await renderWeeklySummary();
+    });
+    
+    // Inicialização
+    async function init() {
+        fillSchools();
+        fillWeeks();
+        await loadDataForCurrentSelection();
+        await renderWeeklySummary();
+    }
+    
+    init().catch(err => console.warn(err));
+    
+    // Se firebase falhar na leitura, ainda assim exibe tabela sem dados
+    window.addEventListener('load', () => {
+        if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "AIzaSyBExemplo1234567890Substitua") {
+            showToast("⚠️ Configure o Firebase com suas credenciais no código (firebaseConfig)", true);
+        }
+    });
+</script>
+</body>
+</html>
