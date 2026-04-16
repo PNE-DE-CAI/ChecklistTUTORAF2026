@@ -166,6 +166,13 @@
             border: 1px solid #0a2f6c;
             color: #0a2f6c;
         }
+        .report-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: flex-start;
+        }
         .summary-table-wrapper {
             overflow-x: auto;
             border-radius: 24px;
@@ -193,18 +200,9 @@
         .school-row:hover {
             filter: brightness(0.97);
         }
-        /* Cores de status */
-        .status-verde { background-color: #d1fae5; }  /* verde claro */
-        .status-amarelo { background-color: #fef9c3; } /* amarelo claro */
-        .status-vermelho { background-color: #ffe4e2; } /* vermelho claro */
-        
-        .status-badge {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 6px;
-        }
+        .status-verde { background-color: #d1fae5; }
+        .status-amarelo { background-color: #fef9c3; }
+        .status-vermelho { background-color: #ffe4e2; }
         .progress-stats {
             display: flex;
             gap: 20px;
@@ -227,11 +225,6 @@
         .stat-number {
             font-size: 1.8rem;
             font-weight: 800;
-        }
-        .stat-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
         .progress-bar-container {
             flex: 2;
@@ -265,9 +258,6 @@
             padding: 5px 15px;
             border: 1px solid #cbd5e1;
         }
-        .search-box i {
-            color: #64748b;
-        }
         .search-box input {
             border: none;
             padding: 8px 0;
@@ -299,16 +289,40 @@
             .card { padding: 1.2rem; }
             .stat-number { font-size: 1.3rem; }
         }
-        .helper-text {
-            font-size: 0.7rem;
-            color: #475569;
-            margin-top: 4px;
-        }
-        .flex-btns {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-            margin-top: 8px;
+        /* Estilos para impressão/PDF */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+            .container {
+                max-width: 100%;
+                background: white;
+                box-shadow: none;
+                border: none;
+                padding: 0.5cm;
+            }
+            .header, .btn-primary, .filter-area, .progress-stats, .report-buttons, .flex-btns, .toast, footer, .edit-school-btn, .btn-outline, .btn-primary, #saveRecordBtn, #clearFormBtn, #clearFilterBtn {
+                display: none !important;
+            }
+            .card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                page-break-inside: avoid;
+            }
+            table {
+                font-size: 10pt;
+            }
+            th, td {
+                padding: 6px 4px;
+            }
+            .status-verde, .status-amarelo, .status-vermelho {
+                background-color: white !important;
+            }
+            h2 {
+                color: black;
+            }
         }
     </style>
 </head>
@@ -384,52 +398,45 @@
         <div class="summary-table-wrapper">
             <table id="summaryTable">
                 <thead>
-                    <tr>
-                        <th>Escola</th>
-                        <th>✅ Registro ok</th>
-                        <th>🔍 Verificado / contatar tutor</th>
-                        <th>⚙️ Em andamento</th>
-                        <th>📝 Obs.</th>
-                        <th>Ação</th>
-                    </tr>
+                    <tr><th>Escola</th><th>✅ Registro ok</th><th>🔍 Verificado / contatar tutor</th><th>⚙️ Em andamento</th><th>📝 Obs.</th><th>Ação</th></tr>
                 </thead>
-                <tbody id="summaryTableBody">
-                    <tr><td colspan="6">Carregando dados...</td></tr>
-                </tbody>
+                <tbody id="summaryTableBody"><tr><td colspan="6">Carregando dados...</td></tr></tbody>
             </table>
         </div>
-        <div class="helper-text" style="margin-top: 12px;"><i class="fas fa-mouse-pointer"></i> Clique em qualquer linha da tabela para editar rapidamente. Linhas coloridas indicam status geral da escola na semana.</div>
+        <div class="helper-text"><i class="fas fa-mouse-pointer"></i> Clique em qualquer linha da tabela para editar rapidamente. Linhas coloridas indicam status geral.</div>
+        
+        <!-- Botões de relatório PDF -->
+        <div class="report-buttons">
+            <button id="generateSchoolReportBtn" class="btn-primary"><i class="fas fa-file-pdf"></i> 📄 Relatório da Escola (todas as semanas)</button>
+            <button id="generateWeeklyReportBtn" class="btn-primary"><i class="fas fa-file-pdf"></i> 📊 Relatório Semanal Geral (todas as escolas)</button>
+        </div>
     </div>
-    <footer>
-        <i class="fas fa-database"></i> Firebase · Dados salvos em tempo real | Registro de percurso semanal (segunda a sexta) 2026
-    </footer>
+    <footer><i class="fas fa-database"></i> Firebase · Dados salvos | Registro de percurso semanal 2026</footer>
 </div>
 <div id="toastMsg" class="toast"></div>
 
 <script>
-    // ======================= CONFIGURAÇÃO DO FIREBASE (JÁ PREENCHIDA) =======================
+    // Firebase config (já preenchida)
     const firebaseConfig = {
-  apiKey: "AIzaSyBrkEa1jGwVKhZWg2CEBeG2ByQ29mS3UM8",
-  authDomain: "ure-caieiras-checklist-tutoraf.firebaseapp.com",
-  projectId: "ure-caieiras-checklist-tutoraf",
-  storageBucket: "ure-caieiras-checklist-tutoraf.firebasestorage.app",
-  messagingSenderId: "373879271731",
-  appId: "1:373879271731:web:608d203c0da60ceb390e46"
-};
-    // ========================================================================================
-
+        apiKey: "AIzaSyBrkEa1jGwVKhZWg2CEBeG2ByQ29mS3UM8",
+        authDomain: "ure-caieiras-checklist-tutoraf.firebaseapp.com",
+        projectId: "ure-caieiras-checklist-tutoraf",
+        storageBucket: "ure-caieiras-checklist-tutoraf.firebasestorage.app",
+        messagingSenderId: "373879271731",
+        appId: "1:373879271731:web:608d203c0da60ceb390e46"
+    };
+    
     let db;
     try {
         firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
-        console.log("Firebase inicializado");
+        console.log("Firebase OK");
     } catch (err) {
-        console.error("Erro Firebase:", err);
-        alert("Erro ao conectar Firebase. Verifique suas credenciais.");
-        db = { collection: () => ({ doc: () => ({ set: () => Promise.reject("Firebase não configurado"), get: () => Promise.resolve({ exists: false, data: () => ({}) }) }) }) };
+        console.error(err);
+        alert("Erro Firebase. Verifique credenciais.");
+        db = { collection: () => ({ doc: () => ({ set: () => Promise.reject(), get: () => Promise.resolve({ exists: false }) }) }) };
     }
 
-    // LISTA DAS 67 ESCOLAS
     const escolasList = [
         "E.E. ADAIL JARBAS DUCLOS", "E.E. AFONSO MORENO", "E.E. ALADINO POLON", "E.E. ALBERTO GRAF – CAPITÃO",
         "E.E. ALBINO FIORE", "E.E. ALFRIED THEODOR WEISZFLOG", "E.E. ANA MARIA GARRIDO ORLANDIN – PROF.ª",
@@ -458,7 +465,6 @@
         "E.E. ZILTON BICUDO – PROF.", "E.E. OLINDO DÁRTORA – DR."
     ];
 
-    // Geração das semanas
     function gerarSemanas2026() {
         const semanas = [];
         const startDate = new Date(2026, 2, 2);
@@ -489,10 +495,10 @@
     
     let currentSchool = escolasList[0];
     let currentWeek = semanasList[0];
-    let allSchoolsDataMap = new Map(); // guarda dados brutos para filtro
+    let allSchoolsDataMap = new Map();
     let currentFilter = "";
     
-    // DOM elements
+    // Elementos
     const schoolSelect = document.getElementById('schoolSelect');
     const weekSelect = document.getElementById('weekSelect');
     const checklistContainer = document.getElementById('checklistContainer');
@@ -500,13 +506,11 @@
     const saveBtn = document.getElementById('saveRecordBtn');
     const clearBtn = document.getElementById('clearFormBtn');
     const summaryTableBody = document.getElementById('summaryTableBody');
-    const weeklySummaryInfo = document.getElementById('weeklySummaryInfo');
     const filterInput = document.getElementById('filterSchoolInput');
     const clearFilterBtn = document.getElementById('clearFilterBtn');
     const verdeCountSpan = document.getElementById('verdeCount');
     const amareloCountSpan = document.getElementById('amareloCount');
     const vermelhoCountSpan = document.getElementById('vermelhoCount');
-    const progressBarContainer = document.getElementById('progressBarContainer');
     
     function showToast(msg, isError = false) {
         const toast = document.getElementById('toastMsg');
@@ -516,11 +520,10 @@
         setTimeout(() => toast.style.opacity = '0', 3200);
     }
     
-    // Determina o status geral da escola baseado nos checkboxes (prioridade: ok > andamento > verificado/nenhum)
     function getSchoolStatus(checklist) {
         if (checklist.registro_ok === true) return "verde";
         if (checklist.registro_andamento === true) return "amarelo";
-        return "vermelho"; // padrão: pendente ou atraso
+        return "vermelho";
     }
     
     function fillSchools() {
@@ -587,10 +590,7 @@
                 renderChecklistForm({});
                 observationField.value = '';
             }
-        } catch (err) {
-            showToast("Erro ao carregar registro", true);
-            renderChecklistForm({});
-        }
+        } catch (err) { showToast("Erro ao carregar", true); }
     }
     
     async function saveCurrentRecord() {
@@ -611,34 +611,26 @@
             await docRef.set(payload, { merge: true });
             showToast(`✅ Salvo: ${currentSchool} - ${currentWeek.label}`);
             await renderWeeklySummary();
-        } catch (err) {
-            showToast(`❌ Erro: ${err.message}`, true);
-        }
+        } catch (err) { showToast(`❌ Erro: ${err.message}`, true); }
     }
     
     async function renderWeeklySummary() {
-        if (!db || !db.collection) {
-            summaryTableBody.innerHTML = '<tr><td colspan="6">⚠️ Firebase não configurado</td></tr>';
-            return;
-        }
+        if (!db || !db.collection) return;
         const targetWeekISO = currentWeek.startISO;
-        weeklySummaryInfo.innerHTML = `<i class="fas fa-chalkboard-user"></i> Status das escolas para: <strong>${currentWeek.label}</strong>`;
         try {
             const snapshot = await db.collection('percurso_semanal').where('weekStart', '==', targetWeekISO).get();
             const recordsMap = new Map();
             snapshot.forEach(doc => { const data = doc.data(); recordsMap.set(data.escola, data); });
             allSchoolsDataMap.clear();
-            // Monta dados de todas escolas
             const escolasStatus = [];
             for (const escola of escolasList) {
                 const record = recordsMap.get(escola);
                 const checklist = record?.checklist || {};
                 const obs = record?.observacao || '';
                 const status = getSchoolStatus(checklist);
-                escolasStatus.push({ escola, checklist, obs, status, record });
+                escolasStatus.push({ escola, checklist, obs, status });
                 allSchoolsDataMap.set(escola, { checklist, obs, status });
             }
-            // Atualizar estatísticas e barra
             let verde = 0, amarelo = 0, vermelho = 0;
             for (const item of escolasStatus) {
                 if (item.status === 'verde') verde++;
@@ -649,22 +641,11 @@
             verdeCountSpan.innerText = verde;
             amareloCountSpan.innerText = amarelo;
             vermelhoCountSpan.innerText = vermelho;
-            const pctVerde = (verde/total)*100;
-            const pctAmarelo = (amarelo/total)*100;
-            const pctVermelho = (vermelho/total)*100;
-            // Atualizar barra
-            const progressSegments = document.querySelectorAll('.progress-segment');
-            if (progressSegments.length) {
-                progressSegments[0].style.width = `${pctVerde}%`;
-                progressSegments[1].style.width = `${pctAmarelo}%`;
-                progressSegments[2].style.width = `${pctVermelho}%`;
-            }
-            // Aplicar filtro e renderizar linhas
+            document.querySelectorAll('.progress-segment')[0].style.width = `${(verde/total)*100}%`;
+            document.querySelectorAll('.progress-segment')[1].style.width = `${(amarelo/total)*100}%`;
+            document.querySelectorAll('.progress-segment')[2].style.width = `${(vermelho/total)*100}%`;
             applyFilterAndRender(escolasStatus);
-        } catch (err) {
-            console.error(err);
-            summaryTableBody.innerHTML = `<tr><td colspan="6">Erro ao carregar dados: ${err.message}</td></tr>`;
-        }
+        } catch (err) { console.error(err); }
     }
     
     function applyFilterAndRender(escolasStatusArray) {
@@ -674,84 +655,153 @@
         for (const item of filtered) {
             const { escola, checklist, obs, status } = item;
             const obsPreview = obs.length > 35 ? obs.substring(0,35)+'…' : obs;
-            const registroOk = checklist.registro_ok ? '✅' : '⬜';
-            const verificado = checklist.registro_verificado ? '🔍' : '◻️';
-            const andamento = checklist.registro_andamento ? '⚡' : '◽';
+            const statusClass = status === 'verde' ? 'status-verde' : (status === 'amarelo' ? 'status-amarelo' : 'status-vermelho');
+            tbodyHtml += `<tr class="school-row ${statusClass}" data-escola="${escola.replace(/"/g, '&quot;')}">
+                <td><strong>${escola}</strong></td>
+                <td style="text-align:center">${checklist.registro_ok ? '✅' : '⬜'}</td>
+                <td style="text-align:center">${checklist.registro_verificado ? '🔍' : '◻️'}</td>
+                <td style="text-align:center">${checklist.registro_andamento ? '⚡' : '◽'}</td>
+                <td style="max-width:200px;">${obsPreview || '—'}</td>
+                <td><button class="edit-school-btn" data-escola="${escola.replace(/"/g, '&quot;')}" style="background:#0a2f6c; border:none; border-radius:30px; padding:4px 12px; color:white; cursor:pointer;"><i class="fas fa-edit"></i> Editar</button></td>
+            </tr>`;
+        }
+        summaryTableBody.innerHTML = filtered.length ? tbodyHtml : '<tr><td colspan="6">Nenhuma escola encontrada</td></tr>';
+        document.querySelectorAll('.school-row').forEach(row => {
+            row.addEventListener('click', (e) => { if(!e.target.closest('.edit-school-btn')) { currentSchool = row.dataset.escola; schoolSelect.value = currentSchool; loadDataForCurrentSelection(); showToast(`Editando: ${currentSchool}`); } });
+        });
+        document.querySelectorAll('.edit-school-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => { e.stopPropagation(); currentSchool = btn.dataset.escola; schoolSelect.value = currentSchool; loadDataForCurrentSelection(); showToast(`Editando: ${currentSchool}`); });
+        });
+    }
+    
+    // ----- Funções de Relatório PDF (usando window.print) -----
+    async function generateSchoolReport(escola) {
+        if (!db) { showToast("Firebase indisponível", true); return; }
+        showToast(`Gerando relatório da escola: ${escola}...`);
+        // Buscar todos os registros desta escola
+        const snapshot = await db.collection('percurso_semanal').where('escola', '==', escola).get();
+        const records = [];
+        snapshot.forEach(doc => records.push(doc.data()));
+        // Ordenar por semana (weekStart)
+        records.sort((a,b) => (a.weekStart || '').localeCompare(b.weekStart || ''));
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html><head><title>Relatório - ${escola}</title>
+            <style>
+                body { font-family: 'Inter', sans-serif; margin: 2cm; }
+                h1 { color: #0a2f6c; border-bottom: 2px solid #d32f2f; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
+                th { background: #eef2ff; }
+                .status-ok { color: green; font-weight: bold; }
+                .status-andamento { color: orange; }
+                .status-pendente { color: red; }
+                footer { margin-top: 30px; font-size: 10px; text-align: center; }
+            </style>
+            </head><body>
+            <h1>URE Caieiras - Relatório de Percurso Semanal</h1>
+            <h2>Escola: ${escola}</h2>
+            <p>Período: ${semanasList[0]?.label.split(' ·')[0]} a ${semanasList[semanasList.length-1]?.label.split(' ·')[0] || 'dezembro/2026'}</p>
+            <table>
+                <thead><tr><th>Semana</th><th>Registro OK</th><th>Verificado (contatar tutor)</th><th>Em andamento</th><th>Observações</th></tr></thead>
+                <tbody>
+        `);
+        for (const week of semanasList) {
+            const record = records.find(r => r.weekStart === week.startISO);
+            const checklist = record?.checklist || {};
+            const obs = record?.observacao || '';
+            const okIcon = checklist.registro_ok ? '✅ Sim' : '❌ Não';
+            const verificadoIcon = checklist.registro_verificado ? '🔍 Sim' : '◻️ Não';
+            const andamentoIcon = checklist.registro_andamento ? '⚡ Sim' : '◽ Não';
+            printWindow.document.write(`
+                <tr>
+                    <td>${week.label}</td>
+                    <td>${okIcon}</td>
+                    <td>${verificadoIcon}</td>
+                    <td>${andamentoIcon}</td>
+                    <td>${obs || '—'}</td>
+                </tr>
+            `);
+        }
+        printWindow.document.write(`
+                </tbody>
+            </table>
+            <footer>Documento gerado pelo sistema URE Caieiras - ${new Date().toLocaleDateString()}</footer>
+            </body></html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+        showToast(`Relatório da escola ${escola} gerado.`);
+    }
+    
+    async function generateWeeklyReport() {
+        if (!db) { showToast("Firebase indisponível", true); return; }
+        const targetWeek = currentWeek;
+        showToast(`Gerando relatório semanal: ${targetWeek.label}...`);
+        const snapshot = await db.collection('percurso_semanal').where('weekStart', '==', targetWeek.startISO).get();
+        const recordsMap = new Map();
+        snapshot.forEach(doc => { const data = doc.data(); recordsMap.set(data.escola, data); });
+        
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html><head><title>Relatório Semanal - ${targetWeek.label}</title>
+            <style>
+                body { font-family: 'Inter', sans-serif; margin: 2cm; }
+                h1 { color: #0a2f6c; border-bottom: 2px solid #d32f2f; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                th { background: #eef2ff; }
+                .status-verde { background-color: #d1fae5; }
+                .status-amarelo { background-color: #fef9c3; }
+                .status-vermelho { background-color: #ffe4e2; }
+                footer { margin-top: 30px; font-size: 10px; text-align: center; }
+            </style>
+            </head><body>
+            <h1>URE Caieiras - Relatório Semanal Geral</h1>
+            <h2>${targetWeek.label}</h2>
+            <p>Data de geração: ${new Date().toLocaleString()}</p>
+            <table>
+                <thead><tr><th>Escola</th><th>Registro OK</th><th>Verificado (contatar tutor)</th><th>Em andamento</th><th>Observações</th></tr></thead>
+                <tbody>
+        `);
+        for (const escola of escolasList) {
+            const record = recordsMap.get(escola);
+            const checklist = record?.checklist || {};
+            const obs = record?.observacao || '';
+            const status = getSchoolStatus(checklist);
             let statusClass = '';
             if (status === 'verde') statusClass = 'status-verde';
             else if (status === 'amarelo') statusClass = 'status-amarelo';
             else statusClass = 'status-vermelho';
-            tbodyHtml += `
-                <tr class="school-row ${statusClass}" data-escola="${escola.replace(/"/g, '&quot;')}">
-                    <td><strong>${escola}</strong></td>
-                    <td style="text-align:center">${registroOk}</td>
-                    <td style="text-align:center">${verificado}</td>
-                    <td style="text-align:center">${andamento}</td>
-                    <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;">${obsPreview || '—'}</td>
-                    <td><button class="edit-school-btn" data-escola="${escola.replace(/"/g, '&quot;')}" style="background:#0a2f6c; border:none; border-radius:30px; padding:4px 12px; color:white; cursor:pointer;"><i class="fas fa-edit"></i> Editar</button></td>
+            printWindow.document.write(`
+                <tr class="${statusClass}">
+                    <td>${escola}</td>
+                    <td>${checklist.registro_ok ? '✅ Sim' : '❌ Não'}</td>
+                    <td>${checklist.registro_verificado ? '🔍 Sim' : '◻️ Não'}</td>
+                    <td>${checklist.registro_andamento ? '⚡ Sim' : '◽ Não'}</td>
+                    <td>${obs || '—'}</td>
                 </tr>
-            `;
+            `);
         }
-        if (filtered.length === 0) tbodyHtml = '<tr><td colspan="6">Nenhuma escola encontrada com esse filtro.</td></tr>';
-        summaryTableBody.innerHTML = tbodyHtml;
-        // Eventos
-        document.querySelectorAll('.school-row').forEach(row => {
-            const escolaAttr = row.getAttribute('data-escola');
-            if (escolaAttr) {
-                row.addEventListener('click', (e) => {
-                    if (e.target.closest('.edit-school-btn')) return;
-                    currentSchool = escolaAttr;
-                    schoolSelect.value = currentSchool;
-                    loadDataForCurrentSelection();
-                    showToast(`Editando: ${currentSchool}`, false);
-                });
-            }
-        });
-        document.querySelectorAll('.edit-school-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const escola = btn.getAttribute('data-escola');
-                if (escola) {
-                    currentSchool = escola;
-                    schoolSelect.value = currentSchool;
-                    loadDataForCurrentSelection();
-                    showToast(`Editando: ${currentSchool}`, false);
-                }
-            });
-        });
+        printWindow.document.write(`
+                </tbody>
+            </table>
+            <footer>Relatório gerado automaticamente - URE Caieiras 2026</footer>
+            </body></html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+        showToast(`Relatório da semana ${targetWeek.label} gerado.`);
     }
     
-    function clearFormLocal() {
-        renderChecklistForm({});
-        observationField.value = '';
-        showToast("Campos limpos localmente", false);
-    }
-    
-    // Filtro em tempo real
-    filterInput.addEventListener('input', (e) => {
-        currentFilter = e.target.value;
-        // re-render com dados atuais (allSchoolsDataMap precisa ser reconstruído)
-        const escolasArray = escolasList.map(escola => {
-            const data = allSchoolsDataMap.get(escola) || { checklist: {}, obs: '', status: 'vermelho' };
-            return { escola, checklist: data.checklist, obs: data.obs, status: data.status };
-        });
-        applyFilterAndRender(escolasArray);
-    });
-    clearFilterBtn.addEventListener('click', () => {
-        filterInput.value = '';
-        currentFilter = '';
-        const escolasArray = escolasList.map(escola => {
-            const data = allSchoolsDataMap.get(escola) || { checklist: {}, obs: '', status: 'vermelho' };
-            return { escola, checklist: data.checklist, obs: data.obs, status: data.status };
-        });
-        applyFilterAndRender(escolasArray);
-        showToast("Filtro removido", false);
-    });
-    
-    saveBtn.addEventListener('click', async () => { await saveCurrentRecord(); });
-    clearBtn.addEventListener('click', clearFormLocal);
-    schoolSelect.addEventListener('change', async () => { await loadDataForCurrentSelection(); await renderWeeklySummary(); });
-    weekSelect.addEventListener('change', async () => { await loadDataForCurrentSelection(); await renderWeeklySummary(); });
+    // Eventos
+    saveBtn.addEventListener('click', saveCurrentRecord);
+    clearBtn.addEventListener('click', () => { renderChecklistForm({}); observationField.value = ''; showToast("Campos limpos"); });
+    filterInput.addEventListener('input', (e) => { currentFilter = e.target.value; renderWeeklySummary(); });
+    clearFilterBtn.addEventListener('click', () => { filterInput.value = ''; currentFilter = ''; renderWeeklySummary(); showToast("Filtro removido"); });
+    document.getElementById('generateSchoolReportBtn').addEventListener('click', () => { generateSchoolReport(currentSchool); });
+    document.getElementById('generateWeeklyReportBtn').addEventListener('click', generateWeeklyReport);
     
     async function init() {
         fillSchools();
@@ -759,7 +809,7 @@
         await loadDataForCurrentSelection();
         await renderWeeklySummary();
     }
-    init().catch(console.warn);
+    init();
 </script>
 </body>
 </html>
