@@ -312,10 +312,10 @@
                 page-break-inside: avoid;
             }
             table {
-                font-size: 10pt;
+                font-size: 9pt;
             }
             th, td {
-                padding: 6px 4px;
+                padding: 5px 3px;
             }
             .status-verde, .status-amarelo, .status-vermelho {
                 background-color: white !important;
@@ -400,7 +400,8 @@
                 <thead>
                     <tr><th>Escola</th><th>✅ Registro ok</th><th>🔍 Verificado / contatar tutor</th><th>⚙️ Em andamento</th><th>📝 Obs.</th><th>Ação</th></tr>
                 </thead>
-                <tbody id="summaryTableBody"><tr><td colspan="6">Carregando dados...</td></tr></tbody>
+                <tbody id="summaryTableBody"><tr><td colspan="6">Carregando dados...</td></tr>
+                </tbody>
             </table>
         </div>
         <div class="helper-text"><i class="fas fa-mouse-pointer"></i> Clique em qualquer linha da tabela para editar rapidamente. Linhas coloridas indicam status geral.</div>
@@ -411,12 +412,12 @@
             <button id="generateWeeklyReportBtn" class="btn-primary"><i class="fas fa-file-pdf"></i> 📊 Relatório Semanal Geral (todas as escolas)</button>
         </div>
     </div>
-    <footer><i class="fas fa-database"></i> Firebase · Dados salvos | Registro de percurso semanal 2026</footer>
+    <footer><i class="fas fa-database"></i>Registro de percurso semanal 2026</footer>
 </div>
 <div id="toastMsg" class="toast"></div>
 
 <script>
-    // Firebase config (já preenchida)
+    // Firebase config
     const firebaseConfig = {
         apiKey: "AIzaSyBrkEa1jGwVKhZWg2CEBeG2ByQ29mS3UM8",
         authDomain: "ure-caieiras-checklist-tutoraf.firebaseapp.com",
@@ -464,6 +465,18 @@
         "E.E. ZILTON BICUDO – PROF.", "E.E. OLINDO DÁRTORA – DR."
     ];
 
+    // NOVOS ITENS ADICIONADOS CONFORME SOLICITAÇÃO
+    const CHECKLIST_ITENS = [
+        { id: "registro_ok", label: "📌 Registro para a semana vigente ok" },
+        { id: "registro_verificado", label: "🔎 Registro verificado, em atraso contatar tutor(a)" },
+        { id: "registro_andamento", label: "⚡ Registro para a semana vigente em andamento" },
+        // Novos itens de análise de percurso
+        { id: "repeticao_percurso", label: "🔄 Repetição de Percurso: Mesma trajetória aplicada a mais de 50% da turma por várias semanas" },
+        { id: "inconsistencia_modulos", label: "⚠️ Inconsistência de Módulos: Percurso com módulos ou cenas incorretas" },
+        { id: "ausencia_personalizacao", label: "🎭 Ausência de Personalização: Percurso idêntico para todos os estudantes da turma" },
+        { id: "registro_fora_prazo", label: "⏰ Registro Fora do Prazo: Lançamento realizado após a data limite semanal" }
+    ];
+    
     function gerarSemanas2026() {
         const semanas = [];
         const startDate = new Date(2026, 2, 2);
@@ -486,18 +499,12 @@
         return semanas;
     }
     const semanasList = gerarSemanas2026();
-    const CHECKLIST_ITENS = [
-        { id: "registro_ok", label: "📌 Registro para a semana vigente ok" },
-        { id: "registro_verificado", label: "🔎 Registro verificado, em atraso contatar tutor(a)" },
-        { id: "registro_andamento", label: "⚡ Registro para a semana vigente em andamento" }
-    ];
     
     let currentSchool = escolasList[0];
     let currentWeek = semanasList[0];
     let allSchoolsDataMap = new Map();
     let currentFilter = "";
     
-    // Elementos
     const schoolSelect = document.getElementById('schoolSelect');
     const weekSelect = document.getElementById('weekSelect');
     const checklistContainer = document.getElementById('checklistContainer');
@@ -662,7 +669,7 @@
                 <td style="text-align:center">${checklist.registro_andamento ? '⚡' : '◽'}</td>
                 <td style="max-width:200px;">${obsPreview || '—'}</td>
                 <td><button class="edit-school-btn" data-escola="${escola.replace(/"/g, '&quot;')}" style="background:#0a2f6c; border:none; border-radius:30px; padding:4px 12px; color:white; cursor:pointer;"><i class="fas fa-edit"></i> Editar</button></td>
-            </tr>`;
+            - `;
         }
         summaryTableBody.innerHTML = filtered.length ? tbodyHtml : '<tr><td colspan="6">Nenhuma escola encontrada</td></tr>';
         document.querySelectorAll('.school-row').forEach(row => {
@@ -673,60 +680,58 @@
         });
     }
     
-    // ----- Funções de Relatório PDF (usando window.print) -----
+    // ========== RELATÓRIOS ATUALIZADOS COM NOVOS ITENS ==========
     async function generateSchoolReport(escola) {
         if (!db) { showToast("Firebase indisponível", true); return; }
         showToast(`Gerando relatório da escola: ${escola}...`);
-        // Buscar todos os registros desta escola
         const snapshot = await db.collection('percurso_semanal').where('escola', '==', escola).get();
         const records = [];
         snapshot.forEach(doc => records.push(doc.data()));
-        // Ordenar por semana (weekStart)
         records.sort((a,b) => (a.weekStart || '').localeCompare(b.weekStart || ''));
         
         const printWindow = window.open('', '_blank');
         printWindow.document.write(`
             <html><head><title>Relatório - ${escola}</title>
             <style>
-                body { font-family: 'Inter', sans-serif; margin: 2cm; }
+                body { font-family: 'Inter', sans-serif; margin: 1.5cm; }
                 h1 { color: #0a2f6c; border-bottom: 2px solid #d32f2f; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px; }
+                th, td { border: 1px solid #999; padding: 6px 4px; text-align: left; vertical-align: top; }
                 th { background: #eef2ff; }
-                .status-ok { color: green; font-weight: bold; }
-                .status-andamento { color: orange; }
-                .status-pendente { color: red; }
-                footer { margin-top: 30px; font-size: 10px; text-align: center; }
+                .badge-ok { color: #15803d; }
+                .footer { margin-top: 25px; font-size: 9px; text-align: center; }
             </style>
             </head><body>
-            <h1>URE Caieiras - Relatório de Percurso Semanal</h1>
-            <h2>Escola: ${escola}</h2>
-            <p>Período: ${semanasList[0]?.label.split(' ·')[0]} a ${semanasList[semanasList.length-1]?.label.split(' ·')[0] || 'dezembro/2026'}</p>
+            <h1>URE Caieiras - Relatório Analítico por Escola</h1>
+            <h2>${escola}</h2>
+            <p>Período letivo 2026 (semanas registradas)</p>
             <table>
-                <thead><tr><th>Semana</th><th>Registro OK</th><th>Verificado (contatar tutor)</th><th>Em andamento</th><th>Observações</th></tr></thead>
+                <thead><tr><th>Semana</th><th>Registro OK</th><th>Verificado/Contatar</th><th>Em andamento</th><th>Repetição Percurso</th><th>Inconsistência Módulos</th><th>Falta Personalização</th><th>Registro Fora Prazo</th><th>Observações</th></tr></thead>
                 <tbody>
         `);
         for (const week of semanasList) {
             const record = records.find(r => r.weekStart === week.startISO);
             const checklist = record?.checklist || {};
             const obs = record?.observacao || '';
-            const okIcon = checklist.registro_ok ? '✅ Sim' : '❌ Não';
-            const verificadoIcon = checklist.registro_verificado ? '🔍 Sim' : '◻️ Não';
-            const andamentoIcon = checklist.registro_andamento ? '⚡ Sim' : '◽ Não';
+            const simNao = (val) => val ? '✅ Sim' : '❌ Não';
             printWindow.document.write(`
                 <tr>
                     <td>${week.label}</td>
-                    <td>${okIcon}</td>
-                    <td>${verificadoIcon}</td>
-                    <td>${andamentoIcon}</td>
-                    <td>${obs || '—'}</td>
+                    <td>${simNao(checklist.registro_ok)}</td>
+                    <td>${simNao(checklist.registro_verificado)}</td>
+                    <td>${simNao(checklist.registro_andamento)}</td>
+                    <td>${simNao(checklist.repeticao_percurso)}</td>
+                    <td>${simNao(checklist.inconsistencia_modulos)}</td>
+                    <td>${simNao(checklist.ausencia_personalizacao)}</td>
+                    <td>${simNao(checklist.registro_fora_prazo)}</td>
+                    <td style="max-width:200px;">${obs || '—'}</td>
                 </tr>
             `);
         }
         printWindow.document.write(`
                 </tbody>
             </table>
-            <footer>Documento gerado pelo sistema URE Caieiras - ${new Date().toLocaleDateString()}</footer>
+            <div class="footer">Documento gerado pelo sistema URE Caieiras - ${new Date().toLocaleDateString()}</div>
             </body></html>
         `);
         printWindow.document.close();
@@ -746,22 +751,22 @@
         printWindow.document.write(`
             <html><head><title>Relatório Semanal - ${targetWeek.label}</title>
             <style>
-                body { font-family: 'Inter', sans-serif; margin: 2cm; }
+                body { font-family: 'Inter', sans-serif; margin: 1.5cm; }
                 h1 { color: #0a2f6c; border-bottom: 2px solid #d32f2f; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 10.5px; }
+                th, td { border: 1px solid #aaa; padding: 7px 4px; text-align: left; vertical-align: top; }
                 th { background: #eef2ff; }
                 .status-verde { background-color: #d1fae5; }
                 .status-amarelo { background-color: #fef9c3; }
                 .status-vermelho { background-color: #ffe4e2; }
-                footer { margin-top: 30px; font-size: 10px; text-align: center; }
+                .footer { margin-top: 25px; font-size: 9px; text-align: center; }
             </style>
             </head><body>
             <h1>URE Caieiras - Relatório Semanal Geral</h1>
             <h2>${targetWeek.label}</h2>
-            <p>Data de geração: ${new Date().toLocaleString()}</p>
+            <p>Gerado em: ${new Date().toLocaleString()}</p>
             <table>
-                <thead><tr><th>Escola</th><th>Registro OK</th><th>Verificado (contatar tutor)</th><th>Em andamento</th><th>Observações</th></tr></thead>
+                <thead><tr><th>Escola</th><th>Registro OK</th><th>Verificado (contatar)</th><th>Em andamento</th><th>Repetição Percurso</th><th>Inconsistência Módulos</th><th>Ausência Personalização</th><th>Registro Fora Prazo</th><th>Observações</th></tr></thead>
                 <tbody>
         `);
         for (const escola of escolasList) {
@@ -773,20 +778,25 @@
             if (status === 'verde') statusClass = 'status-verde';
             else if (status === 'amarelo') statusClass = 'status-amarelo';
             else statusClass = 'status-vermelho';
+            const simNao = (val) => val ? '✅ Sim' : '❌ Não';
             printWindow.document.write(`
                 <tr class="${statusClass}">
                     <td>${escola}</td>
-                    <td>${checklist.registro_ok ? '✅ Sim' : '❌ Não'}</td>
-                    <td>${checklist.registro_verificado ? '🔍 Sim' : '◻️ Não'}</td>
-                    <td>${checklist.registro_andamento ? '⚡ Sim' : '◽ Não'}</td>
-                    <td>${obs || '—'}</td>
+                    <td>${simNao(checklist.registro_ok)}</td>
+                    <td>${simNao(checklist.registro_verificado)}</td>
+                    <td>${simNao(checklist.registro_andamento)}</td>
+                    <td>${simNao(checklist.repeticao_percurso)}</td>
+                    <td>${simNao(checklist.inconsistencia_modulos)}</td>
+                    <td>${simNao(checklist.ausencia_personalizacao)}</td>
+                    <td>${simNao(checklist.registro_fora_prazo)}</td>
+                    <td style="max-width:220px;">${obs || '—'}</td>
                 </tr>
             `);
         }
         printWindow.document.write(`
                 </tbody>
             </table>
-            <footer>Relatório gerado automaticamente - URE Caieiras 2026</footer>
+            <div class="footer">Relatório abrangente com indicadores de qualidade de percurso - URE Caieiras 2026</div>
             </body></html>
         `);
         printWindow.document.close();
